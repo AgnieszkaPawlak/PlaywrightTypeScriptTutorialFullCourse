@@ -26,14 +26,14 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 1 : 1,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 3 : 3,
+  workers: process.env.CI ? 2 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html'],
     ['list'],
-    //['dot'],
+    // Run `npx playwright show-report` manually when you need the HTML report.
+    ['html', { open: 'never' }],
     ['json', { outputFile: 'json-test-report.json' }],
     ['junit', { outputFile: 'junit-test-report.xml' }],
     ['allure-playwright'],
@@ -48,12 +48,9 @@ export default defineConfig({
     screenshot: 'on',
     headless: true,
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on',
+    trace: 'retain-on-failure',
     actionTimeout: 45000,
-
-    // launchOptions: {
-    //   args: ['--start-maximized']
-    // },
+    navigationTimeout: 30000,
   },
 
   // globalSetup: require.resolve('./globals/global-setup'),
@@ -66,10 +63,19 @@ export default defineConfig({
     //   use: { ...devices['Desktop Chrome'] },
     // },
 
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          firefoxUserPrefs: {
+            'permissions.default.camera': 2,
+            'permissions.default.microphone': 2,
+            'media.navigator.permission.disabled': true,
+          },
+        },
+      },
+    },
 
     // {
     //   name: 'webkit',
@@ -90,16 +96,7 @@ export default defineConfig({
     // {
     //   name: 'Microsoft Edge',
     //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    {
-      name: 'Google Chrome',
-      use: {
-        ...devices['Desktop Chrome'],
-        channel: 'chrome',
-        viewport : { width: 1440, height:900 },
-        //storageState: '/storage-state/StorageState.json' 
-      }
-    },
+    // // },
   ],
 
   /* Run your local dev server before starting the tests */

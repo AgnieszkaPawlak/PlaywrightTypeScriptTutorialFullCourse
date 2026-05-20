@@ -53,25 +53,24 @@ async function readJsonReport() {
 
         try {
             const data: TestReport = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-            data.suites.forEach(suite => {
-                suite.specs.forEach(spec => {
+            for (const suite of data.suites) {
+                for (const spec of suite.specs) {
                     const testCaseTitle = `${spec.title}`;
-                    spec.tests.forEach(test => {
-                        test.results.forEach(async result => {
+                    const matches = testCaseTitle.match(/\[(.*?)\]/);
+                    const numbersPart = matches?.[1];
+                    const numbersArray: number[] = numbersPart?.split(',').map(num => parseInt(num.trim(), 10)) ?? [];
+
+                    for (const test of spec.tests) {
+                        for (const result of test.results) {
                             const testCaseStatus = `${result.status}`;
-
-                            const matches = testCaseTitle.match(/\[(.*?)\]/);
-                            const numbersPart = matches?.[1];
-                            const numbersArray: number[] = numbersPart?.split(',').map(num => parseInt(num.trim(), 10)) ?? [];
-
                             for (const testCaseId of numbersArray) {
                                 console.log(`Test Case & Status : ${testCaseId} : ${testCaseStatus}`);
                                 await azureDevOps.updateTestCaseStatus(String(testCaseId), testCaseStatus);
                             }
-                        });
-                    });
-                });
-            });
+                        }
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error while readinf JSON report' + error)
         }
@@ -84,22 +83,23 @@ async function readJsonReport() {
 /**
  * Author Testers Talk
  */
-async function waitForFile(filePath: string) {
-    const fs = require('fs').promises;
-
-    let fileExists = false;
-    while (!fileExists) {
-        try {
-            await fs.access(filePath);
-            fileExists = true; // If no error is thrown, the file exists
-        } catch (err) {
-            // File does not exist yet, wait and try again
-            console.log('Waiting for the file to be available...');
-            await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
-        }
+async function waitForFile(filePath: string, timeoutMs = 60_000): Promise<void> {
+    const fsPromises = require('fs').promises;
+    const start = Date.now();
+  
+    while (Date.now() - start < timeoutMs) {
+      try {
+        await fsPromises.access(filePath);
+        console.log(`File ${filePath} is now available!`);
+        return;
+      } catch {
+        console.log('Waiting for the file to be available...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
     }
-    console.log(`File ${filePath} is now available!`);
-}
+  
+    throw new Error(`File ${filePath} was not created within ${timeoutMs}ms`);
+  }
 
 /**
  * Author: Testers Talk
