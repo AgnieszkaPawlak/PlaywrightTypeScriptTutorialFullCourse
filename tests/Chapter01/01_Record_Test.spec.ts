@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  */
 test('[3] Record a test', { tag: ['@PlaywrightWithAzureDevOpsPipeline','@PlaywrightWithGitHubActions'] }, async ({ page }) => {
 
-  console.log('Test execution started...');
+  console.log('Test execution started on Github Actions.....');
   await test.step('Navigating to URL', async () => {
     await page.goto('https://github.com/');
     await page.getByRole('link', { name: 'Sign in' }).click();
